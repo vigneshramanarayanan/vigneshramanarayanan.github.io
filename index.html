@@ -49,7 +49,7 @@ button:hover {
     <button id="btn4">4</button>
     <button id="btn5">5</button>
   </div>
-  <svg width="1200" height="600"></svg>
+  <svg width="1600" height="600"></svg>
 
   <script>
     const svg = d3.select("svg");
@@ -85,7 +85,7 @@ button:hover {
         .padding(0.2);
 
       const y = d3.scaleLinear()
-        .domain([0, 4000000]) // up to 4M
+        .domain([0, 12000000]) // up to 4M
         .nice()
         .range([height, 0]);
 
@@ -102,7 +102,7 @@ button:hover {
       chartGroup.append("g")
         .call(
           d3.axisLeft(y)
-            .tickValues([0, 1000000, 2000000, 3000000, 4000000])
+            .tickValues([0, 2000000, 4000000, 6000000, 8000000, 10000000, 12000000])
             .tickFormat(d => d === 0 ? "0" : (d / 1e6) + "M")
         );
 
@@ -151,6 +151,15 @@ button:hover {
           .attr("x", d => x(d.Province) + x.bandwidth() / 2)
           .attr("y", d => y(d.MaxCovid) - 5)
           .text(d => millionFormat(d.MaxCovid).replace("G", "B"));
+
+
+        svg.append("text")
+        .attr("x", margin.left + width / 2)
+        .attr("y", margin.top - 15)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "30px")
+        .attr("fill", "#888")
+        .text("Covid Positives By State");
     }
 
     // Helper to blank the SVG and add placeholder text
@@ -165,22 +174,219 @@ button:hover {
         .text("Chart " + chartNum + " to be implemented");
     }
 
-    // Load COVID maxData once
-    let chart1Data;
-    d3.csv("maxData.csv").then(function(data) {
-      data.forEach(d => {
-        d.MaxCovid = +d["Max. CovidPositives"] || +d.MaxCovid || 0;
-        d.Province = d.Province || d["Province State"];
-      });
-      chart1Data = data;
+
+
+    function drawChart2(data) {
+        svg.selectAll("*").remove(); // Clear SVG
+
+        const chartGroup = svg.append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // X and Y scales
+        const x = d3.scaleTime()
+            .domain(d3.extent(data, d => d.date))
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.MaxCovid) || 1])
+            .nice()
+            .range([height, 0]);
+
+        // X Axis
+        chartGroup.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y-%m-%d")))
+            .selectAll("text")
+            .attr("transform", "rotate(-40)")
+            .style("text-anchor", "end")
+            .style("font-size", "14px");
+
+        // Y Axis
+        chartGroup.append("g")
+            .call(
+            d3.axisLeft(y)
+                .tickFormat(d => (d >= 1e6 ? (d / 1e6) + "M" : d))
+            );
+
+        // Y Axis Label
+        svg.append("text")
+            .attr("class", "axis-label")
+            .attr("fill", "#888")
+            .attr("text-anchor", "middle")
+            .attr("transform", `translate(${margin.left - 60},${margin.top + height / 2}) rotate(-90)`)
+            .text("Covid Positives");
+
+        // Line generator
+        const line = d3.line()
+            .x(d => x(d.date))
+            .y(d => y(d.MaxCovid));
+
+        // Draw the line
+        chartGroup.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "#ff9800")
+            .attr("stroke-width", 3)
+            .attr("d", line);
+
+        // Draw circles and tooltips
+        chartGroup.selectAll(".dot")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("class", "dot")
+            .attr("cx", d => x(d.date))
+            .attr("cy", d => y(d.MaxCovid))
+            .attr("r", 4)
+            .attr("fill", "#ff9800")
+            .attr("stroke", "#333")
+            .on("mouseover", function(d) {
+            tooltip.transition().duration(150).style("opacity", 1);
+            tooltip.html(`
+                <strong>${d3.timeFormat("%B %d, %Y")(d.date)}</strong><br>
+                Covid Positives: <span style="color:darkred">${d.MaxCovid}</span>
+            `);
+            d3.select(this).attr("fill", "#f44336");
+            })
+            .on("mousemove", function() {
+            tooltip
+                .style("left", (d3.event.pageX + 10) + "px")
+                .style("top", (d3.event.pageY + 10) + "px");
+            })
+            .on("mouseleave", function() {
+            tooltip.style("opacity", 0);
+            d3.select(this).attr("fill", "#ff9800");
+            });
+
+        // Title
+        svg.append("text")
+            .attr("x", margin.left + width / 2)
+            .attr("y", margin.top - 15)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "30px")
+            .attr("fill", "#888")
+            .text("California Covid Positives Over Time");
+        }
+
+    function drawChartMap3() {
+    svg.selectAll("*").remove(); // Clear SVG
+
+    const chartGroup = svg.append("g")
+        .attr("transform", `translate(${margin.left},${150})`);
+
+    const width = +svg.attr("width") - margin.left - margin.right;
+    const height = +svg.attr("height") - margin.top - margin.bottom;
+
+    // Define projection and path generator for California
+    const projection = d3.geoMercator()
+        .center([-119.5, 37]) // roughly California's center; adjust if needed
+        .scale(2600) // scale to fit SVG—adjust depending on your SVG size
+        .translate([width / 2, height / 2]);
+
+    const geoPath = d3.geoPath().projection(projection);
+
+    // Load GeoJSON then CSV
+    d3.json('california-counties.geojson').then(function(caGeo) {
+        chartGroup.selectAll("path")
+            .data(caGeo.features)
+            .enter().append("path")
+            .attr("d", geoPath)
+            .attr("fill", "#e0e0e0")
+            .attr("stroke", "#999")
+            .attr("stroke-width", 1);
+
+        // Load COVID Data
+        d3.csv("CaliMapCovid.csv").then(function(data) {
+            data.forEach(d => {
+                d['MaxCovid'] = +d['MaxCovid'];
+                d['Lat'] = +d['Lat'];
+                d['Long'] = +d['Long'];
+            });
+
+            // Optional: scale for circle radius
+            const rScale = d3.scaleSqrt()
+                .domain([0, d3.max(data, d => d['MaxCovid'])])
+                .range([2, 20]); // adjust max radius as desired
+
+            // Draw circles for each data point
+            chartGroup.selectAll("circle")
+                .data(data)
+                .enter().append("circle")
+                .attr("cx", d => projection([d['Long'], d['Lat']])[0])
+                .attr("cy", d => projection([d['Long'], d['Lat']])[1])
+                .attr("r", d => rScale(d['MaxCovid']))
+                .attr("fill", "#69b3a2")
+                .attr("fill-opacity", 0.7)
+                .attr("stroke", "#222")
+                .on("mouseover", function(event, d) {
+                    tooltip.transition().duration(150).style("opacity", 1);
+                    tooltip.html(
+                        `<strong>${data[d].Lat + ',' + data[d].Long}</strong><br>
+                        
+                        COVID Positives: <b>${data[d].MaxCovid.toLocaleString()}</b>`
+                    ).style("left", (event.pageX + 10) + "px")
+                     .style("top", (event.pageY - 30) + "px");
+                    d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
+                })
+                .on("mousemove", function() {
+                    tooltip.style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 30) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.transition().duration(200).style("opacity", 0);
+                    d3.select(this).attr("stroke", "#222").attr("stroke-width", 1);
+                });
+
+            // Map Title
+            svg.append("text")
+                .attr("x", margin.left + width / 2)
+                .attr("y", margin.top - 15)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "30px")
+                .attr("fill", "#888")
+                .text("California Covid Positives Over Time");
+        });
     });
+}
+
+
+
+
+        
+
+
+
+        // Load COVID maxData once
+        let chart1Data;
+        d3.csv("maxData.csv").then(function(data) {
+            data.forEach(d => {
+            d.MaxCovid = +d["Max. CovidPositives"] || +d.MaxCovid || 0;
+            d.Province = d.Province || d["Province State"];
+            });
+            chart1Data = data;
+        });
+
+        let chart2Data;
+        // Load chart2Data once
+        d3.csv("california_covid_daily_sum.csv").then(function(data) {
+        // Parse numbers and dates
+            data.forEach(d => {
+            d.MaxCovid = +d["Max. CovidPositives"] || 0;
+            d.date = new Date(d.RecordDate);
+            });
+            // Sort by date ascending
+            data.sort((a, b) => a.date - b.date);
+            chart2Data = data;
+        });
 
     // Button click handlers
     document.getElementById("btn1").onclick = function() {
       if (chart1Data) drawChart1(chart1Data);
     };
-    document.getElementById("btn2").onclick = function() { blankChart(2); };
-    document.getElementById("btn3").onclick = function() { blankChart(3); };
+    document.getElementById("btn2").onclick = function() {
+        if (chart2Data) drawChart2(chart2Data);
+    };
+    document.getElementById("btn3").onclick = function() { drawChartMap3(); };
     document.getElementById("btn4").onclick = function() { blankChart(4); };
     document.getElementById("btn5").onclick = function() { blankChart(5); };
   </script>

@@ -50,7 +50,9 @@ button:hover {
     <button id="btn5">5</button>
   </div>
   <svg width="1600" height="600"></svg>
-
+  <div id="chart-narrative" style="max-width: 900px; margin: 30px auto 0; font-size: 24px; color: #888; text-align: center;">
+   
+  </div>
   <script>
     const svg = d3.select("svg");
     const margin = {top: 50, right: 30, bottom: 150, left: 100};
@@ -160,6 +162,11 @@ button:hover {
         .attr("font-size", "30px")
         .attr("fill", "#888")
         .text("Covid Positives By State");
+
+
+        document.getElementById("chart-narrative").innerHTML = 
+        "The chart displays the total number of Covid-positive cases reported by each U.S. state and territory. California stands out with the highest number, exceeding 12 million cases, followed by Texas (8.5 million), Florida (7.6 million), and New York (6.8 million). Other states show significantly lower totals, with most falling below 4 million. This visualization highlights how the largest and most populous states experienced the highest numbers of Covid-positive cases during the measured period.";
+
     }
 
     // Helper to blank the SVG and add placeholder text
@@ -266,6 +273,10 @@ button:hover {
             .attr("font-size", "30px")
             .attr("fill", "#888")
             .text("California Covid Positives Over Time");
+
+            document.getElementById("chart-narrative").innerHTML = 
+        "Chart shows the cumulative number of COVID-positive cases in California over time, from early 2020 through early 2023. The chart reveals several waves of increased case counts, with notable surges around winter 2020-2021 and again in early 2022. After each surge, the number of new cases levels off before climbing again. By early 2023, the total number of COVID-positive cases in California surpasses 13 million. The data highlights the impact of major outbreaks and underscores how the progression of the pandemic occurred in distinct waves rather than as a steady increase";
+
         }
 
     function drawChartMap3() {
@@ -344,7 +355,7 @@ button:hover {
                 .attr("text-anchor", "middle")
                 .attr("font-size", "30px")
                 .attr("fill", "#888")
-                .text("California Covid Positives Over Time");
+                .text("California Covid Positives By Lat Long");
         });
     });
 }

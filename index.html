@@ -29,22 +29,12 @@
   <svg width="1000" height="600"></svg>
 
   <script>
-    d3.csv("Covid_Trend_By_State_data.csv").then(function(data) {
-      data.forEach(d => {
+    d3.csv("maxData.csv").then(function(maxData) {
+      maxData.forEach(d => {
         d["Max. CovidPositives"] = parseFloat(d["Max. CovidPositives"]) || 0;
       });
 
-      // Group and find max
-      const nested = d3.nest()
-        .key(d => d["Province State"])
-        .rollup(values => d3.max(values, d => d["Max. CovidPositives"]))
-        .entries(data);
-
-      const maxData = nested.map(d => ({
-        Province: d.key,
-        MaxCovid: d.value
-      }));
-
+      
       const svg = d3.select("svg"),
             margin = {top: 20, right: 30, bottom: 80, left: 100},
             width = +svg.attr("width") - margin.left - margin.right,

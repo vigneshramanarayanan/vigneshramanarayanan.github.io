@@ -15,7 +15,7 @@
       font-size: 24px;
     }
     .label {
-      font: 12px sans-serif;
+      font: 14px sans-serif;
       text-anchor: middle;
       fill: #888;
     }
@@ -95,7 +95,8 @@ button:hover {
         .call(d3.axisBottom(x))
         .selectAll("text")
           .attr("transform", "rotate(-40)")
-          .style("text-anchor", "end");
+          .style("text-anchor", "end")
+          .style("font-size", "14px");
 
       // Y Axis, format ticks in millions
       chartGroup.append("g")
@@ -111,7 +112,7 @@ button:hover {
         .attr("fill", "#888")
         .attr("text-anchor", "middle")
         .attr("transform", `translate(${margin.left - 60},${margin.top + height / 2}) rotate(-90)`)
-        .text("Max Covid Positives (millions)");
+        .text("Covid Positives (millions)");
 
       // Bars
       chartGroup.selectAll(".bar")
@@ -127,7 +128,7 @@ button:hover {
             tooltip.transition().duration(150).style("opacity", 1);
             tooltip.html(`
               <strong>${maxData[d].Province}</strong><br>
-              Max Covid Positives: <span style="color:darkred">${millionFormat(maxData[d].MaxCovid).replace("G", "B")}</span>
+              Covid Positives: <span style="color:darkred">${millionFormat(maxData[d].MaxCovid).replace("G", "B")}</span>
             `);
             d3.select(this).attr("fill", "orange");
           })

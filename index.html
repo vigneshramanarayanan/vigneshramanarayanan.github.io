@@ -12,72 +12,56 @@
       fill: orange;
     }
     .axis-label {
-      font-size: 12px;
+      font-size: 24px;
     }
     .label {
       font: 12px sans-serif;
       text-anchor: middle;
-      fill: #222;
+      fill: #888;
     }
     .tooltip {
       position: absolute;
       pointer-events: none;
     }
+    button {
+  font: 24px sans-serif;
+  color: #888;
+  background: #f4f4f4;
+  padding: 10px 30px;
+  margin: 0 8px 10px 0;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+button:hover {
+  background: #ffe0b2;
+  color: #333;
+  border: 2px solid orange;
+}
   </style>
 </head>
 <body>
-  <svg width="1000" height="600"></svg>
+  <div id="buttons" >
+    <button id="btn1">1</button>
+    <button id="btn2">2</button>
+    <button id="btn3">3</button>
+    <button id="btn4">4</button>
+    <button id="btn5">5</button>
+  </div>
+  <svg width="1200" height="600"></svg>
 
   <script>
-    d3.csv("maxData.csv").then(function(maxData) {
-      maxData.forEach(d => {
-        d["Max. CovidPositives"] = parseFloat(d["Max. CovidPositives"]) || 0;
-      });
-      
-      const svg = d3.select("svg"),
-            margin = {top: 50, right: 30, bottom: 150, left: 100},
-            width = +svg.attr("width") - margin.left - margin.right,
-            height = +svg.attr("height") - margin.top - margin.bottom;
+    const svg = d3.select("svg");
+    const margin = {top: 50, right: 30, bottom: 150, left: 100};
+    const width = +svg.attr("width") - margin.left - margin.right;
+    const height = +svg.attr("height") - margin.top - margin.bottom;
 
-      const chart = svg.append("g")
-                       .attr("transform", `translate(${margin.left},${margin.top})`);
+    // Million formatter
+    const millionFormat = d3.format(".2s");
 
-      // Million formatter
-      const millionFormat = d3.format(".2s");
-
-      const x = d3.scaleBand()
-                  .domain(maxData.map(d => d.Province))
-                  .range([0, width])
-                  .padding(0.2);
-
-      const y = d3.scaleLinear()
-                  .domain([0, 4000000])
-                  .nice()
-                  .range([height, 0]);
-
-      // X Axis
-      chart.append("g")
-           .attr("transform", `translate(0,${height})`)
-           .call(d3.axisBottom(x))
-           .selectAll("text")
-             .attr("transform", "rotate(-40)")
-             .style("text-anchor", "end");
-
-      // Y Axis, format ticks in millions
-      chart.append("g")
-           .call(
-               d3.axisLeft(y)
-                 .tickFormat(d => millionFormat(d).replace("G", "B")) // show 1.0M, 2.4M etc
-           )
-           .append("text")
-             .attr("class", "axis-label")
-             .attr("fill", "#000")
-             .attr("x", -50)
-             .attr("y", -50)
-             .text("Max Covid Positives (millions)")
-             .attr("transform", "rotate(-90)");
-
-      const tooltip = d3.select("body")
+    // Tooltip (create once only)
+    const tooltip = d3.select("body")
       .append("div")
       .style("position", "absolute")
       .style("background", "#fff")
@@ -88,48 +72,116 @@
       .style("font", "12px sans-serif")
       .style("opacity", 0);
 
+    // Draw the Covid bar chart
+    function drawChart1(maxData) {
+      svg.selectAll("*").remove(); // Clear SVG
+
+      const chartGroup = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleBand()
+        .domain(maxData.map(d => d.Province))
+        .range([0, width])
+        .padding(0.2);
+
+      const y = d3.scaleLinear()
+        .domain([0, 4000000]) // up to 4M
+        .nice()
+        .range([height, 0]);
+
+      // X Axis
+      chartGroup.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+          .attr("transform", "rotate(-40)")
+          .style("text-anchor", "end");
+
+      // Y Axis, format ticks in millions
+      chartGroup.append("g")
+        .call(
+          d3.axisLeft(y)
+            .tickValues([0, 1000000, 2000000, 3000000, 4000000])
+            .tickFormat(d => d === 0 ? "0" : (d / 1e6) + "M")
+        );
+
+      // Y Axis Label (vertical)
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("fill", "#888")
+        .attr("text-anchor", "middle")
+        .attr("transform", `translate(${margin.left - 60},${margin.top + height / 2}) rotate(-90)`)
+        .text("Max Covid Positives (millions)");
+
       // Bars
-    chart.selectAll(".bar")
-    .data(maxData)
-    .enter()
-    .append("rect")
-    .attr("class", "bar")
-    .attr("x", d => x(d.Province))
-    .attr("y", d => y(d.MaxCovid))
-    .attr("width", x.bandwidth())
-    .attr("height", d => height - y(d.MaxCovid))
-    .on("mouseover", function(event, d) {
-      console.log(d);
-      tooltip.transition().duration(150).style("opacity", 1);
-      tooltip.html(`
+      chartGroup.selectAll(".bar")
+        .data(maxData)
+        .enter()
+        .append("rect")
+          .attr("class", "bar")
+          .attr("x", d => x(d.Province))
+          .attr("y", d => y(d.MaxCovid))
+          .attr("width", x.bandwidth())
+          .attr("height", d => height - y(d.MaxCovid))
+          .on("mouseover", function(event, d) {
+            tooltip.transition().duration(150).style("opacity", 1);
+            tooltip.html(`
               <strong>${maxData[d].Province}</strong><br>
               Max Covid Positives: <span style="color:darkred">${millionFormat(maxData[d].MaxCovid).replace("G", "B")}</span>
             `);
-      d3.select(this).attr("fill", "orange");
-      })
-      .on("mousemove", function() {
-        console.log(event.pageX);
-        tooltip
-        .style("left", (event.pageX + 10) + "px")
-        .style("top", (event.pageY + 10) + "px");
-      })
-      .on("mouseleave", function() {
-          tooltip.style("opacity", 0);
-          d3.select(this).attr("fill", "steelblue");
-        });
-    // ... rest as before ...    
+            d3.select(this).attr("fill", "orange");
+          })
+          .on("mousemove", function() {
+            tooltip
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY + 10) + "px");
+          })
+          .on("mouseleave", function() {
+            tooltip.style("opacity", 0);
+            d3.select(this).attr("fill", "steelblue");
+          });
 
-      // Add data labels in millions
-      chart.selectAll(".label")
-           .data(maxData)
-           .enter()
-           .append("text")
-           .attr("class", "label")
-           .attr("x", d => x(d.Province) + x.bandwidth() / 2)
-           .attr("y", d => y(d.MaxCovid) - 5)
-           .text(d => millionFormat(d.MaxCovid).replace("G", "B")); // e.g. 1.4M
+      // Labels
+      chartGroup.selectAll(".label")
+        .data(maxData)
+        .enter()
+        .append("text")
+          .attr("class", "label")
+          .attr("x", d => x(d.Province) + x.bandwidth() / 2)
+          .attr("y", d => y(d.MaxCovid) - 5)
+          .text(d => millionFormat(d.MaxCovid).replace("G", "B"));
+    }
 
+    // Helper to blank the SVG and add placeholder text
+    function blankChart(chartNum) {
+      svg.selectAll("*").remove();
+      svg.append("text")
+        .attr("x", 500)
+        .attr("y", 300)
+        .attr("text-anchor", "middle")
+        .attr("font-size", 32)
+        .attr("fill", "#888")
+        .text("Chart " + chartNum + " to be implemented");
+    }
+
+    // Load COVID maxData once
+    let chart1Data;
+    d3.csv("maxData.csv").then(function(data) {
+      data.forEach(d => {
+        d.MaxCovid = +d["Max. CovidPositives"] || +d.MaxCovid || 0;
+        d.Province = d.Province || d["Province State"];
+      });
+      chart1Data = data;
     });
+
+    // Button click handlers
+    document.getElementById("btn1").onclick = function() {
+      if (chart1Data) drawChart1(chart1Data);
+    };
+    document.getElementById("btn2").onclick = function() { blankChart(2); };
+    document.getElementById("btn3").onclick = function() { blankChart(3); };
+    document.getElementById("btn4").onclick = function() { blankChart(4); };
+    document.getElementById("btn5").onclick = function() { blankChart(5); };
   </script>
 </body>
 </html>

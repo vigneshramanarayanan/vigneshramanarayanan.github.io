@@ -39,9 +39,33 @@ button:hover {
   color: #333;
   border: 2px solid orange;
 }
+h1 {
+  font-family: 'Droid Serif', 'Georgia', serif; 
+  font-size: 2rem;           
+  font-weight: bold;         
+  color: #22223b;           
+  letter-spacing: 0.05em;    
+  margin-top: 1.2em;
+  margin-bottom: 0.7em;
+  line-height: 1.1;          
+  text-align: center;        
+}
+h2 {
+  font-family: 'Droid Serif', 'Georgia', serif; 
+  font-size: 1rem;           
+  font-weight: bold;           
+  color: #22223b;              
+  letter-spacing: 0.05em;      
+  margin-top: 1.2em;
+  margin-bottom: 0.7em;
+  line-height: 1;            
+  text-align: center;          
+}
   </style>
 </head>
 <body>
+  <h1>Narative visualization of COVID-19 (The Interactive Slide Show)</h1>
+  <h2>by Vignesh Ramkumar Ramanarayanan</h2>
   <div id="buttons" >
     <button id="btn1">1</button>
     <button id="btn2">2</button>
@@ -371,6 +395,183 @@ button:hover {
     });
 }
 
+function drawChartMap4() {
+    svg.selectAll("*").remove(); // Clear SVG
+
+    const chartGroup = svg.append("g")
+        .attr("transform", `translate(${margin.left},${150})`);
+
+    const width = +svg.attr("width") - margin.left - margin.right;
+    const height = +svg.attr("height") - margin.top - margin.bottom;
+
+    // Define projection and path generator for California
+    const projection = d3.geoMercator()
+      .center([-99.9, 31.0])
+      .scale(2500)
+      .translate([width / 2, height / 2]);
+
+    const geoPath = d3.geoPath().projection(projection);
+
+    // Load GeoJSON then CSV
+    d3.json('tx_counties.geojson').then(function(caGeo) {
+        chartGroup.selectAll("path")
+            .data(caGeo.features)
+            .enter().append("path")
+            .attr("d", geoPath)
+            .attr("fill", "#e0e0e0")
+            .attr("stroke", "#999")
+            .attr("stroke-width", 1);
+
+        // Load COVID Data
+        d3.csv("TexasMapCovid.csv").then(function(data) {
+            data.forEach(d => {
+                d['MaxCovid'] = +d['MaxCovid'];
+                d['Lat'] = +d['Lat'];
+                d['Long'] = +d['Long'];
+            });
+
+            // Optional: scale for circle radius
+            const rScale = d3.scaleSqrt()
+                .domain([0, d3.max(data, d => d['MaxCovid'])])
+                .range([2, 20]); // adjust max radius as desired
+
+            // Draw circles for each data point
+            chartGroup.selectAll("circle")
+                .data(data)
+                .enter().append("circle")
+                .attr("cx", d => projection([d['Long'], d['Lat']])[0])
+                .attr("cy", d => projection([d['Long'], d['Lat']])[1])
+                .attr("r", d => rScale(d['MaxCovid']))
+                .attr("fill", "#69b3a2")
+                .attr("fill-opacity", 0.7)
+                .attr("stroke", "#222")
+                .on("mouseover", function(event, d) {
+                    tooltip.transition().duration(150).style("opacity", 1);
+                    tooltip.html(
+                        `<strong>${data[d].Lat + ',' + data[d].Long}</strong><br>
+                        
+                        COVID Positives: <b>${data[d].MaxCovid.toLocaleString()}</b>`
+                    ).style("left", (event.pageX + 10) + "px")
+                     .style("top", (event.pageY - 30) + "px");
+                    d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
+                })
+                .on("mousemove", function() {
+                    tooltip.style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 30) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.transition().duration(200).style("opacity", 0);
+                    d3.select(this).attr("stroke", "#222").attr("stroke-width", 1);
+                });
+
+            // Map Title
+            svg.append("text")
+                .attr("x", margin.left + width / 2)
+                .attr("y", margin.top - 15)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "30px")
+                .attr("fill", "#888")
+                .text("Texas Covid Positives By Lat Long");
+
+
+                document.getElementById("chart-narrative").innerHTML = "The map illustrates the geographic distribution of COVID-19 positive cases across Texas, with each county outlined and the relative number of cases represented by the size of the circles. Larger circles are concentrated in the state’s major population centers, particularly in the Dallas–Fort Worth area, Houston, San Antonio, and the greater southeastern region. This pattern highlights how COVID-19 cases tended to cluster in urban and high-density areas, where population interactions and mobility are greatest. Meanwhile, many rural and less populated counties across West Texas and the Panhandle exhibit smaller circles, indicating lower case counts. The visual reinforces the correlation between population density and COVID-19 prevalence, demonstrating that while cases occurred throughout the state, the brunt of the pandemic was borne by Texas’s largest urban communities."
+                
+
+
+
+        });
+    });
+}
+
+
+function drawChartMap5() {
+    svg.selectAll("*").remove(); // Clear SVG
+
+    const chartGroup = svg.append("g")
+        .attr("transform", `translate(${margin.left},${150})`);
+
+    const width = +svg.attr("width") - margin.left - margin.right;
+    const height = +svg.attr("height") - margin.top - margin.bottom;
+
+    // Define projection and path generator for California
+    const projection = d3.geoMercator()
+    .center([-82.5, 27.5])  // center on Florida
+    .scale(3800)            // scale to fit your SVG dimensions 
+    .translate([width / 2, height / 2]);
+
+    const geoPath = d3.geoPath().projection(projection);
+
+    // Load GeoJSON then CSV
+    d3.json('fl-counties.geojson').then(function(caGeo) {
+        chartGroup.selectAll("path")
+            .data(caGeo.features)
+            .enter().append("path")
+            .attr("d", geoPath)
+            .attr("fill", "#e0e0e0")
+            .attr("stroke", "#999")
+            .attr("stroke-width", 1);
+
+        // Load COVID Data
+        d3.csv("FlMapCovid.csv").then(function(data) {
+            data.forEach(d => {
+                d['MaxCovid'] = +d['MaxCovid'];
+                d['Lat'] = +d['Lat'];
+                d['Long'] = +d['Long'];
+            });
+
+            // Optional: scale for circle radius
+            const rScale = d3.scaleSqrt()
+                .domain([0, d3.max(data, d => d['MaxCovid'])])
+                .range([2, 20]); // adjust max radius as desired
+
+            // Draw circles for each data point
+            chartGroup.selectAll("circle")
+                .data(data)
+                .enter().append("circle")
+                .attr("cx", d => projection([d['Long'], d['Lat']])[0])
+                .attr("cy", d => projection([d['Long'], d['Lat']])[1])
+                .attr("r", d => rScale(d['MaxCovid']))
+                .attr("fill", "#69b3a2")
+                .attr("fill-opacity", 0.7)
+                .attr("stroke", "#222")
+                .on("mouseover", function(event, d) {
+                    tooltip.transition().duration(150).style("opacity", 1);
+                    tooltip.html(
+                        `<strong>${data[d].Lat + ',' + data[d].Long}</strong><br>
+                        
+                        COVID Positives: <b>${data[d].MaxCovid.toLocaleString()}</b>`
+                    ).style("left", (event.pageX + 10) + "px")
+                     .style("top", (event.pageY - 30) + "px");
+                    d3.select(this).attr("stroke", "black").attr("stroke-width", 2);
+                })
+                .on("mousemove", function() {
+                    tooltip.style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 30) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.transition().duration(200).style("opacity", 0);
+                    d3.select(this).attr("stroke", "#222").attr("stroke-width", 1);
+                });
+
+            // Map Title
+            svg.append("text")
+                .attr("x", margin.left + width / 2)
+                .attr("y", margin.top - 15)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "30px")
+                .attr("fill", "#888")
+                .text("Florida Covid Positives By Lat Long");
+
+
+                document.getElementById("chart-narrative").innerHTML = "The Map depicts the distribution of COVID-19 positive cases across the state of Florida. The highest numbers of cases are concentrated in the state’s most populous metropolitan areas, including South Florida (particularly Miami-Dade, Broward, and Palm Beach counties), the Orlando region in Central Florida, Tampa Bay on the west coast, and the area around Jacksonville in the northeast." + 
+                  "Lower case counts, are seen throughout Florida’s Panhandle and in rural, inland counties, highlighting the disparity between urban and rural regions. This pattern emphasizes how the burden of COVID-19 was greatest in Florida’s densely populated urban centers where population density, tourism, and greater mobility contributed to increased transmission. In contrast, more sparsely populated areas experienced a comparatively lower impact."
+                
+
+
+
+        });
+    });
+}
 
 
 
@@ -409,8 +610,8 @@ button:hover {
         if (chart2Data) drawChart2(chart2Data);
     };
     document.getElementById("btn3").onclick = function() { drawChartMap3(); };
-    document.getElementById("btn4").onclick = function() { blankChart(4); };
-    document.getElementById("btn5").onclick = function() { blankChart(5); };
+    document.getElementById("btn4").onclick = function() { drawChartMap4(); };
+    document.getElementById("btn5").onclick = function() { drawChartMap5(); };
   </script>
 </body>
 </html>

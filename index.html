@@ -39,6 +39,11 @@ button:hover {
   color: #333;
   border: 2px solid orange;
 }
+button.active {
+  background: #ffe0b2;
+  color: #333;
+  border: 2px solid orange;
+}
 h1 {
   font-family: 'Droid Serif', 'Georgia', serif; 
   font-size: 2rem;           
@@ -63,7 +68,7 @@ h2 {
 }
   </style>
 </head>
-<body>
+<body id="thisBody">
   <h1>Narrative visualization of COVID-19 (The Interactive Slide Show)</h1>
   <h2>by Vignesh Ramkumar Ramanarayanan</h2>
   <div id="buttons" >
@@ -610,39 +615,61 @@ function drawChartMap5() {
 }
 
 
-        // Load COVID maxData once
-        let chart1Data;
-        d3.csv("maxData.csv").then(function(data) {
-            data.forEach(d => {
-            d.MaxCovid = +d["Max. CovidPositives"] || +d.MaxCovid || 0;
-            d.Province = d.Province || d["Province State"];
-            });
-            chart1Data = data;
+    // Load COVID maxData once
+    let chart1Data;
+    d3.csv("maxData.csv").then(function(data) {
+        data.forEach(d => {
+        d.MaxCovid = +d["Max. CovidPositives"] || +d.MaxCovid || 0;
+        d.Province = d.Province || d["Province State"];
         });
+        chart1Data = data;
+        if (chart1Data) drawChart1(chart1Data);
+        highlightButton("btn1");
+    });   
 
-        let chart2Data;
-        // Load chart2Data once
-        d3.csv("covid_daily_sum_ca_tx_fl.csv").then(function(data) {
-            // Parse numbers and dates
-            data.forEach(d => {
-                d.MaxCovid = +d["Max. CovidPositives"] || 0;
-                d.date = new Date(d.RecordDate);
-                d.provinceState = d["Province State"]; // Add this line
-            });
-            // Sort by date ascending
-            data.sort((a, b) => a.date - b.date);
-            chart2Data = data;
+    let chart2Data;
+    // Load chart2Data once
+    d3.csv("covid_daily_sum_ca_tx_fl.csv").then(function(data) {
+        // Parse numbers and dates
+        data.forEach(d => {
+            d.MaxCovid = +d["Max. CovidPositives"] || 0;
+            d.date = new Date(d.RecordDate);
+            d.provinceState = d["Province State"]; // Add this line
         });
+        // Sort by date ascending
+        data.sort((a, b) => a.date - b.date);
+        chart2Data = data;
+    });
     // Button click handlers
     document.getElementById("btn1").onclick = function() {
       if (chart1Data) drawChart1(chart1Data);
+      highlightButton("btn1");
     };
+
     document.getElementById("btn2").onclick = function() {
         if (chart2Data) drawChart2(chart2Data);
+        highlightButton("btn2");
     };
-    document.getElementById("btn3").onclick = function() { drawChartMap3(); };
-    document.getElementById("btn4").onclick = function() { drawChartMap4(); };
-    document.getElementById("btn5").onclick = function() { drawChartMap5(); };
+    document.getElementById("btn3").onclick = function() { drawChartMap3(); highlightButton("btn3"); };
+    document.getElementById("btn4").onclick = function() { drawChartMap4(); highlightButton("btn4"); };
+    document.getElementById("btn5").onclick = function() { drawChartMap5(); highlightButton("btn5"); };   
+  function highlightButton(buttonId) {
+  // Select all buttons on the page
+  const buttons = document.querySelectorAll('button');
+
+  buttons.forEach(button => {
+    //console.log('Button id:', button.id);
+    if (button.id === buttonId) {
+      // Highlight the target button
+      button.style.backgroundColor = 'orange';
+      button.style.color = 'black';
+    } else {
+      // Remove highlight from other buttons
+      button.style.backgroundColor = '';
+      button.style.color = '';
+    }
+  });
+}
   </script>
 </body>
 </html>
